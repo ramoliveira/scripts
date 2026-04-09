@@ -6,6 +6,11 @@
 -- - git instalado
 
 -- =========================
+-- PATH
+-- =========================
+-- vim.env.PATH = vim.env.PATH .. ":/opt/homebrew/bin"
+
+-- =========================
 -- Bootstrap lazy.nvim
 -- =========================
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
@@ -34,7 +39,7 @@ opt.tabstop = 2
 opt.shiftwidth = 2
 opt.expandtab = true
 opt.smartindent = true
-opt.wrap = fa
+opt.wrap = false
 opt.termguicolors = true
 opt.cursorline = true
 opt.signcolumn = "yes"
@@ -52,7 +57,7 @@ require("lazy").setup({
   {
     "vhyrro/luarocks.nvim",
     priority = 1000,
-    config = function() 
+    config = function()
       require('luarocks-nvim').setup({})
     end,
   },
@@ -108,50 +113,6 @@ require("lazy").setup({
     end,
   },
 
-  -- LSP
-  {
-    "neovim/nvim-lspconfig",
-    config = function()
-
-      -- Configuração dos servidores
-      vim.lsp.config("pyright", {})
-      vim.lsp.config("ts_ls", {})
-      vim.lsp.config("gopls", {})
-      vim.lsp.config("sourcekit", {})      
-      vim.lsp.config("kotlin_language_server", {})      
-      vim.lsp.config("rust_analyzer", {})
-      vim.lsp.config("clangd", {})
-      vim.lsp.config("lua_ls", {
-        settings = {
-          Lua = {
-            diagnostics = {
-              globals = { "vim" },
-            },
-            workspace = {
-              library = vim.api.nvim_get_runtime_file("", true),
-              checkThirdParty = false,
-            },
-            telemetry = {
-              enable = false,
-            },
-          },
-        },
-      })
-
-      -- Ativação dos servidores
-      vim.lsp.enable({
-        "pyright",
-        "ts_ls",
-        "gopls",
-        "sourcekit",
-        "kotlin_language_server",
-        "rust_analyzer",
-        "clangd",
-        "lua_ls",
-      })
-    end,
-  },
-
   -- Autocomplete
   {
     "hrsh7th/nvim-cmp",
@@ -193,6 +154,26 @@ require("lazy").setup({
     config = function()
       require("lualine").setup({
         options = { theme = "tokyonight" },
+        sections = {
+          lualine_c = {
+            { "filename" },
+            {
+              function()
+                local navic = require("nvim-navic")
+                if navic.is_available() then
+                  return navic.get_location()
+                end
+                return ""
+              end,
+            },
+          },
+          lualine_x = {
+            "venv-selector",
+            "encoding",
+            "fileformat",
+            "filetype",
+          },
+        },
       })
     end,
   },
@@ -214,6 +195,147 @@ require("lazy").setup({
     dependencies = { "L3MON4D3/LuaSnip" },
     config = function()
       require("luasnip.loaders.from_vscode").lazy_load()
+    end,
+  },
+
+  -- Errors
+  {
+    "folke/trouble.nvim",
+    config = function()
+      require("trouble").setup({
+        modes = {
+          diagnostics = {
+            win = {
+              position = "right",
+              size = 40,
+            },
+          },
+        },
+      })
+      vim.keymap.set("n", "<leader>xd", function()
+        require("trouble").toggle("diagnostics")
+      end)
+    end,
+  },
+
+  -- Breadcrumbs
+  {
+    "SmiteshP/nvim-navic",
+    dependencies = "neovim/nvim-lspconfig",
+  },
+
+  -- Which Key
+  {
+    "folke/which-key.nvim",
+    config = function()
+      require("which-key").setup({})
+    end,
+  },
+
+  -- Git Signs
+  {
+    "lewis6991/gitsigns.nvim",
+    config = function()
+      require("gitsigns").setup()
+    end,
+  },
+
+  -- Mason LSP Manager
+  {
+    "neovim/nvim-lspconfig",
+    branch = "master",
+    dependencies = {
+      "mason-org/mason.nvim",
+      "mason-org/mason-lspconfig.nvim",
+    },
+    config = function()
+      require("mason").setup()
+
+      require("mason-lspconfig").setup({
+        ensure_installed = {
+          "pyright",
+          "ts_ls",
+          "gopls",
+          -- "sourcekit",
+          -- "kotlin_language_server",
+          -- "rust_analyzer",
+          "clangd",
+          "lua_ls",
+        },
+        automatic_installation = true,
+      })
+
+      vim.lsp.config("pyright", {})
+      vim.lsp.config("ts_ls", {})
+      vim.lsp.config("gopls", {})
+      -- vim.lsp.config("sourcekit", {})      
+      -- vim.lsp.config("kotlin_language_server", {})      
+      -- vim.lsp.config("rust_analyzer", {})
+      vim.lsp.config("clangd", {})
+      vim.lsp.config("lua_ls", {
+        settings = {
+          Lua = {
+            diagnostics = {
+              globals = { "vim" },
+            },
+            workspace = {
+              library = vim.api.nvim_get_runtime_file("", true),
+              checkThirdParty = false,
+            },
+            telemetry = {
+              enable = false,
+            },
+          },
+        },
+      })
+    end,
+  },
+
+  -- Venv
+  {
+    "linux-cultist/venv-selector.nvim",
+    dependencies = {
+      {
+        "nvim-telescope/telescope.nvim",
+        version = "*",
+        dependencies = {
+          "nvim-lua/plenary.nvim"
+        },
+      },
+    },
+    ft = "python", -- load when opening Python files
+    keys = {
+      { "<leader>v", "<cmd>VenvSelect<cr>", desc = "Select Venv" },
+    },
+    opts = {},
+  },
+
+  -- Terminal
+  {
+    "akinsho/toggleterm.nvim",
+    version = "*",
+    config = function()
+      require("toggleterm").setup({
+        open_mapping = [[<c-\>]],
+        direction = "float",
+        shade_terminals = true,
+      })
+    end,
+  },
+
+  -- Notifications
+  {
+    "rcarriga/nvim-notify",
+    config = function()
+      local notify = require("notify")
+
+      notify.setup({
+        timeout = 3000,
+        background_colour = "#000000",
+        stages = "fade_in_slide_out",
+      })
+
+      vim.notify = notify
     end,
   },
 })
@@ -242,15 +364,26 @@ keymap("n", "<C-j>", "<C-w>j")
 keymap("n", "<C-k>", "<C-w>k")
 keymap("n", "<C-l>", "<C-w>l")
 
--- Resize
-keymap("n", "<C-Up>", ":resize -2<CR>")
-keymap("n", "<C-Down>", ":resize +2<CR>")
-keymap("n", "<C-Left>", ":vertical resize -2<CR>")
-keymap("n", "<C-Right>", ":vertical resize +2<CR>")
-
 -- Tabs Navigation
 keymap("n", "<Tab>", ":BufferLineCycleNext<CR>")
 keymap("n", "<S-Tab>", ":BufferLineCyclePrev<CR>")
+
+-- Copy
+keymap("v", "<C-c>", '"+y') -- Ctrl+C
+keymap("v", "<leader>y", '"+y') -- Visual: Space+y -> Copia seleção
+keymap("n", "<leader>y", '"+yy') -- Normal: Space+y -> Copia linha
+
+-- Python vevn
+keymap("n", "<leader>v", ":VenvSelect<CR>")
+
+-- Terminal
+keymap("n", "<leader>t", "<cmd>ToggleTerm<cr>")
+keymap("n", "<leader>tf", "<cmd>ToggleTerm direction=float<cr>")
+keymap("n", "<leader>th", "<cmd>ToggleTerm direction=horizontal<cr>")
+
+-- Diagnostics
+keymap("n", "<leader>d", vim.diagnostic.open_float) -- ver erro detalhado
+keymap("n", "<leader>dl", vim.diagnostic.setloclist) -- lista de erros
 
 -- =========================
 -- LSP Keymaps
@@ -259,13 +392,51 @@ vim.api.nvim_create_autocmd("LspAttach", {
   callback = function(args)
     local opts = { buffer = args.buf }
 
-    keymap("n", "gd", vim.lsp.buf.definition, opts)
+    -- LSP Keymaps
+    keymap("n", "gd", vim.lsp.buf.definition, opts) -- Go to definition
     keymap("n", "K", vim.lsp.buf.hover, opts)
-    keymap("n", "gr", vim.lsp.buf.references, opts)
-    keymap("n", "<leader>rn", vim.lsp.buf.rename, opts)
+    keymap("n", "gr", vim.lsp.buf.references, opts) -- Go to reference
+    keymap("n", "<leader>rn", vim.lsp.buf.rename, opts) -- Rename
+
+    -- Navic
+    local client = vim.lsp.get_client_by_id(args.data.client_id)
+    local navic = require("nvim-navic")
+    if client.server_capabilities.documentSymbolProvider then
+      navic.attach(client, args.buf)
+    end
   end,
 })
 
 -- =========================
+-- Notify colors
+-- =========================
+vim.api.nvim_set_hl(0, "NotifyBackground", {
+  bg = "#1a1b26",
+})
+
+vim.api.nvim_set_hl(0, "NotifyERRORBorder", {
+  fg = "#db4b4b",
+  bg = "#1a1b26",
+})
+
+vim.api.nvim_set_hl(0, "NotifyINFOBorder", {
+  fg = "#7aa2f7",
+  bg = "#1a1b26",
+})
+
+-- =========================
+-- Notify settings
+-- =========================
+-- vim.fn.jobstart(cmd, {
+--   on_exit = function(_, code)
+--     if code == 0 then
+--       vim.notify("✔ Execution OK")
+--     else
+--       vim.notify("✖ Execution failed", "error")
+--     end
+--   end,
+-- })
+
+-- =========================
 -- Fim
--- ========================
+-- =========================
